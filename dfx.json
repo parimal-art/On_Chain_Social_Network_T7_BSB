@@ -1,0 +1,27 @@
+{
+  "canisters": {
+    "On_Chain_Social_Network_T7_BSB_backend": {
+      "candid": "src/On_Chain_Social_Network_T7_BSB_backend/On_Chain_Social_Network_T7_BSB_backend.did",
+      "package": "On_Chain_Social_Network_T7_BSB_backend",
+      "type": "rust"
+    },
+    "On_Chain_Social_Network_T7_BSB_frontend": {
+      "dependencies": [
+        "On_Chain_Social_Network_T7_BSB_backend"
+      ],
+      "source": [
+        "src/On_Chain_Social_Network_T7_BSB_frontend/dist"
+      ],
+      "type": "assets",
+      "workspace": "On_Chain_Social_Network_T7_BSB_frontend"
+    }
+  },
+  "defaults": {
+    "build": {
+      "args": "",
+      "packtool": ""
+    }
+  },
+  "output_env_file": ".env",
+  "version": 1
+}

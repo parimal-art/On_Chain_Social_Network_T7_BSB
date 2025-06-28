@@ -1,0 +1,5 @@
+[workspace]
+members = [
+    "src/On_Chain_Social_Network_T7_BSB_backend"
+]
+resolver = "2"
