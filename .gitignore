@@ -23,3 +23,10 @@ dist/
 
 # environment variables
 .env
+target/
+dfx.json.lock
+.dfx/
+*.wasm
+node_modules/
+Cargo.lock
+
