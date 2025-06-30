@@ -1,3 +1,41 @@
+type User = record {
+    username: text;
+    bio: text;
+    followers: vec text;
+};
+
+type Post = record {
+    id: nat64;
+    content: text;
+    author: text;
+    timestamp: nat64;
+    likes: vec text;
+};
+
+type Comment = record {
+    post_id: nat64;
+    author: text;
+    content: text;
+    timestamp: nat64;
+};
+
 service : {
-    "greet": (text) -> (text) query;
+    // Query methods
+    "get_user": () -> (opt User) query;
+    "get_user_by_principal": (text) -> (opt User) query;
+    "get_all_users": () -> (vec record { text; User }) query;
+    "get_all_posts": () -> (vec Post) query;
+    "get_comments": (nat64) -> (vec Comment) query;
+    "get_feed": () -> (vec Post) query;
+    
+    // Update methods
+    "create_user": (text, text) -> ();
+    "create_post": (text) -> ();
+    "follow_user": (text) -> ();
+    "unfollow_user": (text) -> ();
+    "edit_profile": (text, text) -> ();
+    "delete_post": (nat64) -> ();
+    "like_post": (nat64) -> ();
+    "unlike_post": (nat64) -> ();
+    "add_comment": (nat64, text) -> ();
 }
