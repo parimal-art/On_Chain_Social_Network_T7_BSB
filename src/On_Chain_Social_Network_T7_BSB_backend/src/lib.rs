@@ -11,6 +11,7 @@ struct User {
     username: String,
     bio: String,
     followers: Vec<String>,
+    following: Vec<String>, // Add following list to track who this user follows
 }
 
 #[derive(Clone, Debug, CandidType, Deserialize)]
@@ -48,6 +49,7 @@ fn create_user(username: String, bio: String) {
         username,
         bio,
         followers: Vec::new(),
+        following: Vec::new(),
     };
     USERS.with(|users| {
         users.borrow_mut().insert(id, user);
@@ -81,9 +83,18 @@ fn follow_user(target_principal: String) {
     let follower = caller().to_text();
     USERS.with(|users| {
         let mut db = users.borrow_mut();
-        if let Some(user) = db.get_mut(&target_principal) {
-            if !user.followers.contains(&follower) {
-                user.followers.push(follower);
+        
+        // Add follower to the target user's followers list
+        if let Some(target_user) = db.get_mut(&target_principal) {
+            if !target_user.followers.contains(&follower) {
+                target_user.followers.push(follower.clone());
+            }
+        }
+        
+        // Add target to the follower's following list
+        if let Some(follower_user) = db.get_mut(&follower) {
+            if !follower_user.following.contains(&target_principal) {
+                follower_user.following.push(target_principal);
             }
         }
     });
@@ -94,8 +105,15 @@ fn unfollow_user(target_principal: String) {
     let follower = caller().to_text();
     USERS.with(|users| {
         let mut db = users.borrow_mut();
-        if let Some(user) = db.get_mut(&target_principal) {
-            user.followers.retain(|f| f != &follower);
+        
+        // Remove follower from target user's followers list
+        if let Some(target_user) = db.get_mut(&target_principal) {
+            target_user.followers.retain(|f| f != &follower);
+        }
+        
+        // Remove target from follower's following list
+        if let Some(follower_user) = db.get_mut(&follower) {
+            follower_user.following.retain(|f| f != &target_principal);
         }
     });
 }
@@ -189,19 +207,30 @@ fn get_comments(post_id: u64) -> Vec<Comment> {
 #[query]
 fn get_feed() -> Vec<Post> {
     let caller_id = caller().to_text();
-    let followed_authors = USERS.with(|users| {
+    
+    // Get the list of users that the caller is following
+    let following = USERS.with(|users| {
         users.borrow()
             .get(&caller_id)
-            .map(|user| user.followers.clone())
+            .map(|user| user.following.clone())
             .unwrap_or_else(Vec::new)
     });
+
+    // Add the caller's own posts to the feed
+    let mut following_with_self = following;
+    following_with_self.push(caller_id);
 
     POSTS.with(|posts| {
         posts
             .borrow()
             .iter()
-            .filter(|post| followed_authors.contains(&post.author))
+            .filter(|post| following_with_self.contains(&post.author))
             .cloned()
             .collect()
     })
+}
+
+#[query]
+fn get_all_posts() -> Vec<Post> {
+    POSTS.with(|posts| posts.borrow().clone())
 }

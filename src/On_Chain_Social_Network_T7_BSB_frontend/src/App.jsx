@@ -4,15 +4,21 @@ import "./App.scss";
 
 function App() {
   const [user, setUser] = useState(null);
+  const [userPrincipal, setUserPrincipal] = useState(null);
   const [posts, setPosts] = useState([]);
   const [allUsers, setAllUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("feed");
+  const [selectedPost, setSelectedPost] = useState(null);
+  const [comments, setComments] = useState([]);
+  const [showComments, setShowComments] = useState({});
 
   // Form states
   const [newPostContent, setNewPostContent] = useState("");
   const [profileForm, setProfileForm] = useState({ username: "", bio: "" });
   const [showCreateProfile, setShowCreateProfile] = useState(false);
+  const [showEditProfile, setShowEditProfile] = useState(false);
+  const [newCommentContent, setNewCommentContent] = useState("");
 
   useEffect(() => {
     loadUserData();
@@ -25,7 +31,17 @@ function App() {
         await On_Chain_Social_Network_T7_BSB_backend.get_user();
       setUser(currentUser[0] || null);
 
+      const users =
+        await On_Chain_Social_Network_T7_BSB_backend.get_all_users();
+      setAllUsers(users);
+
+      // Find current user's principal
       if (currentUser[0]) {
+        const userPrincipal = users.find(
+          ([_, userData]) => userData.username === currentUser[0].username
+        )?.[0];
+        setUserPrincipal(userPrincipal);
+
         const feed = await On_Chain_Social_Network_T7_BSB_backend.get_feed();
         setPosts(feed);
       } else {
@@ -33,10 +49,6 @@ function App() {
           await On_Chain_Social_Network_T7_BSB_backend.get_all_posts();
         setPosts(allPosts);
       }
-
-      const users =
-        await On_Chain_Social_Network_T7_BSB_backend.get_all_users();
-      setAllUsers(users);
     } catch (error) {
       console.error("Error loading user data:", error);
     } finally {
@@ -72,12 +84,36 @@ function App() {
     }
   };
 
+  const createComment = async (postId) => {
+    if (!newCommentContent.trim()) return;
+
+    try {
+      await On_Chain_Social_Network_T7_BSB_backend.create_comment(
+        postId,
+        newCommentContent
+      );
+      setNewCommentContent("");
+      await loadUserData();
+    } catch (error) {
+      console.error("Error creating comment:", error);
+    }
+  };
+
   const likePost = async (postId) => {
     try {
       await On_Chain_Social_Network_T7_BSB_backend.like_post(postId);
       await loadUserData();
     } catch (error) {
       console.error("Error liking post:", error);
+    }
+  };
+
+  const unlikePost = async (postId) => {
+    try {
+      await On_Chain_Social_Network_T7_BSB_backend.unlike_post(postId);
+      await loadUserData();
+    } catch (error) {
+      console.error("Error unliking post:", error);
     }
   };
 
@@ -88,6 +124,76 @@ function App() {
     } catch (error) {
       console.error("Error following user:", error);
     }
+  };
+
+  const unfollowUser = async (userPrincipal) => {
+    try {
+      await On_Chain_Social_Network_T7_BSB_backend.unfollow_user(userPrincipal);
+      await loadUserData();
+    } catch (error) {
+      console.error("Error unfollowing user:", error);
+    }
+  };
+
+  const deletePost = async (postId) => {
+    try {
+      await On_Chain_Social_Network_T7_BSB_backend.delete_post(postId);
+      await loadUserData();
+    } catch (error) {
+      console.error("Error deleting post:", error);
+    }
+  };
+
+  const editProfile = async () => {
+    if (!profileForm.username.trim()) return;
+
+    try {
+      await On_Chain_Social_Network_T7_BSB_backend.edit_profile(
+        profileForm.username,
+        profileForm.bio
+      );
+      await loadUserData();
+      setShowEditProfile(false);
+      setProfileForm({ username: "", bio: "" });
+    } catch (error) {
+      console.error("Error editing profile:", error);
+    }
+  };
+
+  const addComment = async (postId) => {
+    if (!newCommentContent.trim()) return;
+
+    try {
+      await On_Chain_Social_Network_T7_BSB_backend.add_comment(
+        postId,
+        newCommentContent
+      );
+      setNewCommentContent("");
+      await loadComments(postId);
+    } catch (error) {
+      console.error("Error adding comment:", error);
+    }
+  };
+
+  const loadComments = async (postId) => {
+    try {
+      const postComments =
+        await On_Chain_Social_Network_T7_BSB_backend.get_comments(postId);
+      setComments(postComments);
+    } catch (error) {
+      console.error("Error loading comments:", error);
+    }
+  };
+
+  const toggleComments = async (postId) => {
+    const isVisible = showComments[postId];
+    if (!isVisible) {
+      await loadComments(postId);
+    }
+    setShowComments((prev) => ({
+      ...prev,
+      [postId]: !isVisible,
+    }));
   };
 
   if (loading) {
@@ -151,12 +257,60 @@ function App() {
     );
   }
 
+  if (showEditProfile) {
+    return (
+      <div className="app">
+        <div className="profile-form">
+          <h2>Edit Your Profile</h2>
+          <input
+            type="text"
+            placeholder="Username"
+            value={profileForm.username}
+            onChange={(e) =>
+              setProfileForm({ ...profileForm, username: e.target.value })
+            }
+          />
+          <textarea
+            placeholder="Bio"
+            value={profileForm.bio}
+            onChange={(e) =>
+              setProfileForm({ ...profileForm, bio: e.target.value })
+            }
+          />
+          <div className="form-actions">
+            <button onClick={editProfile} className="btn-primary">
+              Save Changes
+            </button>
+            <button
+              onClick={() => setShowEditProfile(false)}
+              className="btn-secondary"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="app">
       <header className="header">
         <h1>On-Chain Social Network</h1>
         <div className="user-info">
           <span>Welcome, {user?.username}!</span>
+          <button
+            onClick={() => {
+              setProfileForm({
+                username: user?.username || "",
+                bio: user?.bio || "",
+              });
+              setShowEditProfile(true);
+            }}
+            className="btn-secondary"
+          >
+            Edit Profile
+          </button>
         </div>
       </header>
 
@@ -190,10 +344,20 @@ function App() {
             ) : (
               posts.map((post, index) => (
                 <div key={index} className="post">
-                  <h3>
-                    {allUsers.find(([id]) => id === post.author)?.[1]
-                      ?.username || "Unknown User"}
-                  </h3>
+                  <div className="post-header">
+                    <h3>
+                      {allUsers.find(([id]) => id === post.author)?.[1]
+                        ?.username || "Unknown User"}
+                    </h3>
+                    {post.author === userPrincipal && (
+                      <button
+                        onClick={() => deletePost(post.id)}
+                        className="btn-danger"
+                      >
+                        Delete
+                      </button>
+                    )}
+                  </div>
                   <p className="post-content">{post.content}</p>
                   <div className="post-actions">
                     <button
@@ -202,11 +366,62 @@ function App() {
                     >
                       👍 {post.likes.length}
                     </button>
+                    <button
+                      onClick={() => unlikePost(post.id)}
+                      className="unlike-btn"
+                    >
+                      👎 Unlike
+                    </button>
                     <span className="timestamp">
                       {new Date(
                         Number(post.timestamp) / 1000000
                       ).toLocaleString()}
                     </span>
+                  </div>
+
+                  <div className="comments-section">
+                    <button
+                      onClick={() => toggleComments(post.id)}
+                      className="toggle-comments"
+                    >
+                      {showComments[post.id]
+                        ? "Hide Comments"
+                        : "Show Comments"}
+                    </button>
+                    {showComments[post.id] && (
+                      <div className="comments">
+                        {comments
+                          .filter((comment) => comment.post_id === post.id)
+                          .map((comment, commentIndex) => (
+                            <div key={commentIndex} className="comment">
+                              <strong>
+                                {allUsers.find(
+                                  ([id]) => id === comment.author
+                                )?.[1]?.username || "Unknown User"}
+                                :
+                              </strong>{" "}
+                              {comment.content}
+                              <span className="comment-timestamp">
+                                {new Date(
+                                  Number(comment.timestamp) / 1000000
+                                ).toLocaleString()}
+                              </span>
+                            </div>
+                          ))}
+                        <textarea
+                          placeholder="Add a comment..."
+                          value={newCommentContent}
+                          onChange={(e) => setNewCommentContent(e.target.value)}
+                          rows={2}
+                        />
+                        <button
+                          onClick={() => addComment(post.id)}
+                          className="btn-primary"
+                        >
+                          Comment
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))
@@ -232,19 +447,33 @@ function App() {
         {activeTab === "users" && (
           <div className="users">
             <h2>All Users</h2>
-            {allUsers.map(([principal, userData]) => (
-              <div key={principal} className="user-card">
-                <h3>{userData.username}</h3>
-                <p>{userData.bio}</p>
-                <p>Followers: {userData.followers.length}</p>
-                <button
-                  onClick={() => followUser(principal)}
-                  className="btn-secondary"
-                >
-                  Follow
-                </button>
-              </div>
-            ))}
+            {allUsers.map(([principal, userData]) => {
+              const isFollowing = user?.following?.includes(principal) || false;
+              const isCurrentUser = principal === userPrincipal;
+
+              return (
+                <div key={principal} className="user-card">
+                  <h3>{userData.username}</h3>
+                  <p>{userData.bio}</p>
+                  <p>Followers: {userData.followers.length}</p>
+                  {!isCurrentUser && (
+                    <button
+                      onClick={() =>
+                        isFollowing
+                          ? unfollowUser(principal)
+                          : followUser(principal)
+                      }
+                      className={isFollowing ? "btn-danger" : "btn-secondary"}
+                    >
+                      {isFollowing ? "Unfollow" : "Follow"}
+                    </button>
+                  )}
+                  {isCurrentUser && (
+                    <span className="current-user-label">You</span>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </main>
