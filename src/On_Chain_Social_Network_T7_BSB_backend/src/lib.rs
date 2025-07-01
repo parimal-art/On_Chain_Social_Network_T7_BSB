@@ -42,8 +42,9 @@ thread_local! {
 
 // ===== Update Methods =====
 
+/// Creates a new user and returns the caller's principal ID
 #[update]
-fn create_user(username: String, bio: String) {
+fn create_user(username: String, bio: String) -> String {
     let id = caller().to_text();
     let user = User {
         username,
@@ -52,8 +53,15 @@ fn create_user(username: String, bio: String) {
         following: Vec::new(),
     };
     USERS.with(|users| {
-        users.borrow_mut().insert(id, user);
+        users.borrow_mut().insert(id.clone(), user);
     });
+    id
+}
+
+/// Simple login check to return principal ID
+#[query]
+fn login() -> String {
+    caller().to_text()
 }
 
 #[update]
