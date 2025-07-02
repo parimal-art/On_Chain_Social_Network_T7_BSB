@@ -359,20 +359,25 @@ function App() {
                     )}
                   </div>
                   <p className="post-content">{post.content}</p>
-                  <div className="post-actions">
-                    <button
-                      onClick={() => likePost(post.id)}
-                      className="like-btn"
-                    >
-                      👍 {post.likes.length}
-                    </button>
-                    <button
-                      onClick={() => unlikePost(post.id)}
-                      className="unlike-btn"
-                    >
-                      👎 Unlike
-                    </button>
-                    <span className="timestamp">
+                  <div
+                    className="post-actions"
+                    style={{ display: "flex", justifyContent: "space-between" }}
+                  >
+                    <div style={{ display: "flex", gap: "1rem" }}>
+                      <button
+                        onClick={() => likePost(post.id)}
+                        className="like-btn"
+                      >
+                        👍 {post.likes.length}
+                      </button>
+                      <button
+                        onClick={() => unlikePost(post.id)}
+                        className="unlike-btn"
+                      >
+                        👎 Unlikes
+                      </button>
+                    </div>
+                    <span style={{ fontSize: "0.90rem" }}>
                       {new Date(
                         Number(post.timestamp) / 1000000
                       ).toLocaleString()}
@@ -393,33 +398,55 @@ function App() {
                         {comments
                           .filter((comment) => comment.post_id === post.id)
                           .map((comment, commentIndex) => (
-                            <div key={commentIndex} className="comment">
-                              <strong>
-                                {allUsers.find(
-                                  ([id]) => id === comment.author
-                                )?.[1]?.username || "Unknown User"}
-                                :
-                              </strong>{" "}
-                              {comment.content}
-                              <span className="comment-timestamp">
-                                {new Date(
-                                  Number(comment.timestamp) / 1000000
-                                ).toLocaleString()}
-                              </span>
-                            </div>
+                            <>
+                              <div
+                                key={commentIndex}
+                                className="comment"
+                                style={{
+                                  display: "flex",
+                                  justifyContent: "space-between",
+                                  fontSize: "1rem",
+                                }}
+                              >
+                                <div>
+                                  <strong>
+                                    {allUsers.find(
+                                      ([id]) => id === comment.author
+                                    )?.[1]?.username || "Unknown User"}
+                                    :
+                                  </strong>{" "}
+                                  {comment.content}
+                                </div>
+                                <span style={{ fontSize: "0.90rem" }}>
+                                  {new Date(
+                                    Number(comment.timestamp) / 1000000
+                                  ).toLocaleString()}
+                                </span>
+                              </div>
+                              <hr />
+                            </>
                           ))}
-                        <textarea
-                          placeholder="Add a comment..."
-                          value={newCommentContent}
-                          onChange={(e) => setNewCommentContent(e.target.value)}
-                          rows={2}
-                        />
-                        <button
-                          onClick={() => addComment(post.id)}
-                          className="btn-primary"
-                        >
-                          Comment
-                        </button>
+                        <div className="add-comment">
+                          <input
+                            placeholder="Add a comment..."
+                            value={newCommentContent}
+                            onChange={(e) =>
+                              setNewCommentContent(e.target.value)
+                            }
+                            // rows={2}
+                            type="text"
+                          />
+                          <button
+                            onClick={() => addComment(post.id)}
+                            className="btn-primary"
+                            style={{
+                              height:"3.1rem",
+                              marginTop:"1rem"
+                            }}
+                          >
+                            Comment
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>

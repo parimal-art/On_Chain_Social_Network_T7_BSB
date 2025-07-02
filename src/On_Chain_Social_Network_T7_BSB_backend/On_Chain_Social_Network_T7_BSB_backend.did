@@ -2,6 +2,7 @@ type User = record {
     username: text;
     bio: text;
     followers: vec text;
+    following: vec text;
 };
 
 type Post = record {
@@ -21,21 +22,24 @@ type Comment = record {
 
 service : {
     // Query methods
-    "get_user": () -> (opt User) query;
-    "get_user_by_principal": (text) -> (opt User) query;
-    "get_all_users": () -> (vec record { text; User }) query;
-    "get_all_posts": () -> (vec Post) query;
-    "get_comments": (nat64) -> (vec Comment) query;
-    "get_feed": () -> (vec Post) query;
-    
+    get_user: () -> (opt User) query;
+    get_user_by_principal: (text) -> (opt User) query;
+    get_all_users: () -> (vec record { text; User }) query;
+    get_all_posts: () -> (vec Post) query;
+    get_comments: (nat64) -> (vec Comment) query;
+    get_feed: () -> (vec Post) query;
+
     // Update methods
-    "create_user": (text, text) -> ();
-    "create_post": (text) -> ();
-    "follow_user": (text) -> ();
-    "unfollow_user": (text) -> ();
-    "edit_profile": (text, text) -> ();
-    "delete_post": (nat64) -> ();
-    "like_post": (nat64) -> ();
-    "unlike_post": (nat64) -> ();
-    "add_comment": (nat64, text) -> ();
+    create_user: (text, text) -> (text);
+    create_post: (text) -> ();
+    follow_user: (text) -> ();
+    unfollow_user: (text) -> ();
+    edit_profile: (text, text) -> ();
+    delete_post: (nat64) -> ();
+    like_post: (nat64) -> ();
+    unlike_post: (nat64) -> ();
+    add_comment: (nat64, text) -> ();
+
+    // Login method
+    login: () -> (text) query;
 }
