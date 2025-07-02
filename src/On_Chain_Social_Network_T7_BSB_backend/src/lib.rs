@@ -2,7 +2,7 @@ use ic_cdk::api::caller;
 use ic_cdk_macros::{query, update};
 use std::cell::RefCell;
 use std::collections::HashMap;
-use candid::{CandidType, Deserialize};
+use candid::{CandidType, Deserialize, Principal};
 
 // ===== Data Models =====
 
@@ -10,23 +10,23 @@ use candid::{CandidType, Deserialize};
 struct User {
     username: String,
     bio: String,
-    followers: Vec<String>,
-    following: Vec<String>, // Add following list to track who this user follows
+    followers: Vec<Principal>,
+    following: Vec<Principal>,
 }
 
 #[derive(Clone, Debug, CandidType, Deserialize)]
 struct Post {
     id: u64,
     content: String,
-    author: String,
+    author: Principal,
     timestamp: u64,
-    likes: Vec<String>,
+    likes: Vec<Principal>,
 }
 
 #[derive(Clone, Debug, CandidType, Deserialize)]
 struct Comment {
     post_id: u64,
-    author: String,
+    author: Principal,
     content: String,
     timestamp: u64,
 }
@@ -34,7 +34,7 @@ struct Comment {
 // ===== State =====
 
 thread_local! {
-    static USERS: RefCell<HashMap<String, User>> = RefCell::new(HashMap::new());
+    static USERS: RefCell<HashMap<Principal, User>> = RefCell::new(HashMap::new());
     static POSTS: RefCell<Vec<Post>> = RefCell::new(Vec::new());
     static POST_ID_COUNTER: RefCell<u64> = RefCell::new(0);
     static COMMENTS: RefCell<Vec<Comment>> = RefCell::new(Vec::new());
@@ -42,10 +42,9 @@ thread_local! {
 
 // ===== Update Methods =====
 
-/// Creates a new user and returns the caller's principal ID
 #[update]
-fn create_user(username: String, bio: String) -> String {
-    let id = caller().to_text();
+fn create_user(username: String, bio: String) {
+    let id = caller();
     let user = User {
         username,
         bio,
@@ -53,20 +52,13 @@ fn create_user(username: String, bio: String) -> String {
         following: Vec::new(),
     };
     USERS.with(|users| {
-        users.borrow_mut().insert(id.clone(), user);
+        users.borrow_mut().insert(id, user);
     });
-    id
-}
-
-/// Simple login check to return principal ID
-#[query]
-fn login() -> String {
-    caller().to_text()
 }
 
 #[update]
 fn create_post(content: String) {
-    let author = caller().to_text();
+    let author = caller();
     let timestamp = ic_cdk::api::time();
     let new_post = POSTS.with(|posts| {
         POST_ID_COUNTER.with(|counter| {
@@ -87,19 +79,17 @@ fn create_post(content: String) {
 }
 
 #[update]
-fn follow_user(target_principal: String) {
-    let follower = caller().to_text();
+fn follow_user(target_principal: Principal) {
+    let follower = caller();
     USERS.with(|users| {
         let mut db = users.borrow_mut();
         
-        // Add follower to the target user's followers list
         if let Some(target_user) = db.get_mut(&target_principal) {
             if !target_user.followers.contains(&follower) {
                 target_user.followers.push(follower.clone());
             }
         }
         
-        // Add target to the follower's following list
         if let Some(follower_user) = db.get_mut(&follower) {
             if !follower_user.following.contains(&target_principal) {
                 follower_user.following.push(target_principal);
@@ -109,17 +99,15 @@ fn follow_user(target_principal: String) {
 }
 
 #[update]
-fn unfollow_user(target_principal: String) {
-    let follower = caller().to_text();
+fn unfollow_user(target_principal: Principal) {
+    let follower = caller();
     USERS.with(|users| {
         let mut db = users.borrow_mut();
         
-        // Remove follower from target user's followers list
         if let Some(target_user) = db.get_mut(&target_principal) {
             target_user.followers.retain(|f| f != &follower);
         }
         
-        // Remove target from follower's following list
         if let Some(follower_user) = db.get_mut(&follower) {
             follower_user.following.retain(|f| f != &target_principal);
         }
@@ -128,7 +116,7 @@ fn unfollow_user(target_principal: String) {
 
 #[update]
 fn edit_profile(new_username: String, new_bio: String) {
-    let id = caller().to_text();
+    let id = caller();
     USERS.with(|users| {
         let mut db = users.borrow_mut();
         if let Some(user) = db.get_mut(&id) {
@@ -140,7 +128,7 @@ fn edit_profile(new_username: String, new_bio: String) {
 
 #[update]
 fn delete_post(post_id: u64) {
-    let author = caller().to_text();
+    let author = caller();
     POSTS.with(|posts| {
         posts.borrow_mut().retain(|post| !(post.id == post_id && post.author == author));
     });
@@ -148,7 +136,7 @@ fn delete_post(post_id: u64) {
 
 #[update]
 fn like_post(post_id: u64) {
-    let user = caller().to_text();
+    let user = caller();
     POSTS.with(|posts| {
         let mut db = posts.borrow_mut();
         if let Some(post) = db.iter_mut().find(|p| p.id == post_id) {
@@ -161,7 +149,7 @@ fn like_post(post_id: u64) {
 
 #[update]
 fn unlike_post(post_id: u64) {
-    let user = caller().to_text();
+    let user = caller();
     POSTS.with(|posts| {
         let mut db = posts.borrow_mut();
         if let Some(post) = db.iter_mut().find(|p| p.id == post_id) {
@@ -172,7 +160,7 @@ fn unlike_post(post_id: u64) {
 
 #[update]
 fn add_comment(post_id: u64, content: String) {
-    let author = caller().to_text();
+    let author = caller();
     let timestamp = ic_cdk::api::time();
 
     let comment = Comment {
@@ -191,17 +179,17 @@ fn add_comment(post_id: u64, content: String) {
 
 #[query]
 fn get_user() -> Option<User> {
-    let id = caller().to_text();
+    let id = caller();
     USERS.with(|users| users.borrow().get(&id).cloned())
 }
 
 #[query]
-fn get_user_by_principal(principal_id: String) -> Option<User> {
+fn get_user_by_principal(principal_id: Principal) -> Option<User> {
     USERS.with(|users| users.borrow().get(&principal_id).cloned())
 }
 
 #[query]
-fn get_all_users() -> Vec<(String, User)> {
+fn get_all_users() -> Vec<(Principal, User)> {
     USERS.with(|users| users.borrow().iter().map(|(id, u)| (id.clone(), u.clone())).collect())
 }
 
@@ -214,9 +202,8 @@ fn get_comments(post_id: u64) -> Vec<Comment> {
 
 #[query]
 fn get_feed() -> Vec<Post> {
-    let caller_id = caller().to_text();
+    let caller_id = caller();
     
-    // Get the list of users that the caller is following
     let following = USERS.with(|users| {
         users.borrow()
             .get(&caller_id)
@@ -224,7 +211,6 @@ fn get_feed() -> Vec<Post> {
             .unwrap_or_else(Vec::new)
     });
 
-    // Add the caller's own posts to the feed
     let mut following_with_self = following;
     following_with_self.push(caller_id);
 

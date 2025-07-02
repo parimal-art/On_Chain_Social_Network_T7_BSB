@@ -13,3 +13,4 @@ ic-cdk = "0.8.3"
 ic-cdk-macros = "0.8.4"
 ic-cdk-timers = "0.11" 
 serde = { version = "1.0", features = ["derive"] } 
+ic-stable-structures = "0.5.4" 

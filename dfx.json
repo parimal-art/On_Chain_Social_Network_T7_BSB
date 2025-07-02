@@ -13,7 +13,12 @@
         "src/On_Chain_Social_Network_T7_BSB_frontend/dist"
       ],
       "type": "assets",
-      "workspace": "On_Chain_Social_Network_T7_BSB_frontend"
+      "workspace": "On_Chain_Social_Network_T7_BSB_frontend",
+      "headers": [
+        ["Content-Type", "application/javascript", {"match": "**/*.js"}],
+        ["Content-Type", "text/css", {"match": "**/*.css"}],
+        ["Content-Type", "text/html", {"match": "**/*.html"}]
+      ]
     }
   },
   "defaults": {
