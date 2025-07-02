@@ -29,10 +29,12 @@ export const AuthProvider = ({ children }) => {
     const identity = client.getIdentity();
     setPrincipal(identity.getPrincipal());
 
+    const host = process.env.DFX_NETWORK === "local" ? "http://localhost:4943" : "https://ic0.app";
+
     // Create an agent using the identity
     const agent = new (await import("@dfinity/agent")).HttpAgent({ 
       identity,
-      host: process.env.DFX_NETWORK === "local" ? "http://localhost:4943" : "https://ic0.app",
+      host,
     });
 
     if (process.env.DFX_NETWORK !== "ic") {
@@ -44,7 +46,7 @@ export const AuthProvider = ({ children }) => {
       });
     }
 
-    const newActor = createActor(process.env.BACKEND_CANISTER_ID, { agent });
+    const newActor = createActor(process.env.BACKEND_CANISTER_ID, { agentOptions: { identity, host } });
     setActor(newActor);
   };
 
