@@ -264,37 +264,35 @@ body {
 
     .add-comment {
       display: flex;
-      flex-direction: column;
       gap: 0.75rem;
-      margin-bottom: 1rem;
-
-      textarea {
-        width: 100%;
-        padding: 0.75rem;
-        border: 1px solid $border-color;
-        border-radius: 0.5rem;
-        font-size: 0.9rem;
-        font-family: inherit;
+    }
+      input {
+        margin-top: 1rem;
+        padding: 1rem; 
+        border: 2px solid $border-color;
+        border-radius: 8px;
+        font-size: 1rem;
+        margin-bottom: 1rem;
         resize: vertical;
-        min-height: 3.5rem;
-        line-height: 1.4;
-        background-color: #ffffff;
-
+        font-family: inherit;
+        margin-right: 1rem;
+        flex: 1;
         &:focus {
           outline: none;
           border-color: $primary-color;
-          box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
         }
 
         &::placeholder {
           color: $text-secondary;
         }
-      }
+      
 
       button {
         align-self: flex-end;
         min-width: 100px;
         padding: 0.5rem 1rem;
+        font-size: 1rem;
+        padding: 1rem;
       }
 
       @media (min-width: 768px) {
@@ -331,7 +329,7 @@ body {
         }
 
         .comment-timestamp {
-          font-size: 0.75rem;
+          font-size: 0.25rem;
           color: $text-secondary;
         }
       }
